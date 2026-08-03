@@ -52,11 +52,11 @@ async function run() {
      res.json(result);
    })
 
-   app.delete("/facility/:userId",async(req,res=>{
+   app.delete("/facility/:userId",async(req,res)=>{
       const {userId}=req.params;
       const result=await facilitycollection.deleteOne({_id:new ObjectId(userId)})
       res.json()
-   }))
+   })
 
 
    app.get("/facility/email/:userEmail",async(req,res)=>{
