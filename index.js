@@ -38,16 +38,31 @@ async function run() {
       res.json(result);
 
    })
+ 
 
    app.get("/facility",async(req,res)=>{
     const result=await facilitycollection.find().toArray()
     res.json(result);
    })
 
+
    app.get("/facility/:id",async(req,res)=>{
      const {id}=req.params
      const result = await facilitycollection.findOne({_id:new ObjectId(id)})
      res.json(result);
+   })
+
+   app.delete("/facility/:userId",async(req,res=>{
+      const {userId}=req.params;
+      const result=await facilitycollection.deleteOne({_id:new ObjectId(userId)})
+      res.json()
+   }))
+
+
+   app.get("/facility/email/:userEmail",async(req,res)=>{
+    const {userEmail}=req.params
+    const result = await facilitycollection.find({ ownerEmail:userEmail }).toArray()
+    res.json(result)
    })
 
    app.post("/booking",async(req,res)=>{
