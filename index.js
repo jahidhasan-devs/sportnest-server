@@ -36,8 +36,18 @@ async function run() {
       const facilityData=req.body   
       const result =await  facilitycollection.insertOne(facilityData)
       res.json(result);
-
    })
+
+  app.patch("/facility/:id",async(req,res)=>{
+    const {id}=req.params
+    const updatedData=req.body
+    const result=await facilitycollection.updateOne(
+      {_id:new ObjectId(id)},
+      {$set:updatedData}
+       )
+    res.json(result);
+  })
+
  
 
    app.get("/facility",async(req,res)=>{
@@ -52,18 +62,21 @@ async function run() {
      res.json(result);
    })
 
-   app.delete("/facility/:userId",async(req,res)=>{
-      const {userId}=req.params;
-      const result=await facilitycollection.deleteOne({_id:new ObjectId(userId)})
-      res.json()
-   })
-
-
+ 
    app.get("/facility/email/:userEmail",async(req,res)=>{
     const {userEmail}=req.params
     const result = await facilitycollection.find({ ownerEmail:userEmail }).toArray()
     res.json(result)
    })
+
+     app.delete("/facility/:userId", async (req, res) => {
+       const { userId } = req.params;
+       const result = await facilitycollection.deleteOne({
+         _id: new ObjectId(userId),
+       });
+       res.json(result);
+     });
+
 
    app.post("/booking",async(req,res)=>{
     const bookingData=req.body;
