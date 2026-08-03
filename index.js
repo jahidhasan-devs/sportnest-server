@@ -38,6 +38,7 @@ async function run() {
       res.json(result);
    })
 
+
   app.patch("/facility/:id",async(req,res)=>{
     const {id}=req.params
     const updatedData=req.body
@@ -50,10 +51,38 @@ async function run() {
 
  
 
-   app.get("/facility",async(req,res)=>{
-    const result=await facilitycollection.find().toArray()
-    res.json(result);
-   })
+  //  app.get("/facility",async(req,res)=>{
+  //   const result=await facilitycollection.find().toArray()
+  //   res.json(result);
+  //  })
+
+
+  //  Search functionality ar jonno
+
+   app.get("/facility", async (req, res) => {
+     const { search, type } = req.query;
+
+     const query = {};
+
+     // Search by Facility Name
+     if (search) {
+       query.facilityName = {
+         $regex: search,
+         $options: "i", // Case insensitive
+       };
+     }
+
+     // Filter by Sport Type
+     if (type) {
+       query.facilityType = {
+         $in: [type],
+       };
+     }
+
+     const result = await facilitycollection.find(query).toArray();
+
+     res.json(result);
+   });
 
 
    app.get("/facility/:id",async(req,res)=>{
