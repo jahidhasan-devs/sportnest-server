@@ -1,5 +1,4 @@
 const express = require("express");
-
 require("dotenv").config();
 const app = express();
 const cors = require('cors');
@@ -9,10 +8,8 @@ const cors = require('cors');
 app.use(cors());
 app.use(express.json()); 
 
-
-
-
 const { MongoClient, ServerApiVersion, deserialize, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 const uri = process.env.MONGODB_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -24,9 +21,45 @@ const client = new MongoClient(uri, {
   },
 });
 
+
+ const JWKS = createRemoteJWKSet(
+   new URL(`${process.env.CLIENT_URI}/api/auth/jwks`),
+ );
+
+//Middle ware function
+const varifyToken = async(req,res,next)=>{
+  const authHeader=req?.headers.authorization
+
+  if(!authHeader){
+    return res.status(401).json({
+      Message:"unauthorized"
+    })
+  }
+
+  const token=authHeader.split(" ")[1]
+
+  if(!token){
+    return res.status(401).json({
+      Message:"unauthorized"
+    })
+
+
+}
+
+ try {
+   const { payload } = await jwtVerify(token, JWKS);
+   next();
+ } catch (error) {
+   return res.status(401).json({
+     Message: "Forbidden",
+   });
+ }
+
+}
+
 async function run() {
   try {
-    await client.connect(); 
+    // await client.connect(); 
     
     const db=client.db("sportnest");
     const facilitycollection=db.collection("facility")
@@ -39,25 +72,16 @@ async function run() {
    })
 
 
-  app.patch("/facility/:id",async(req,res)=>{
-    const {id}=req.params
-    const updatedData=req.body
-    const result=await facilitycollection.updateOne(
-      {_id:new ObjectId(id)},
-      {$set:updatedData}
-       )
+  app.patch("/facility/:id", varifyToken, async (req, res) => {
+    const { id } = req.params;
+    const updatedData = req.body;
+    const result = await facilitycollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updatedData },
+    );
     res.json(result);
-  })
+  });
 
- 
-
-  //  app.get("/facility",async(req,res)=>{
-  //   const result=await facilitycollection.find().toArray()
-  //   res.json(result);
-  //  })
-
-
-  //  Search functionality ar jonno
 
    app.get("/facility", async (req, res) => {
      const { search, type } = req.query;
@@ -85,20 +109,20 @@ async function run() {
    });
 
 
-   app.get("/facility/:id",async(req,res)=>{
+   app.get("/facility/:id", varifyToken,  async(req,res)=>{
      const {id}=req.params
      const result = await facilitycollection.findOne({_id:new ObjectId(id)})
      res.json(result);
    })
 
  
-   app.get("/facility/email/:userEmail",async(req,res)=>{
+   app.get("/facility/email/:userEmail",varifyToken,async(req,res)=>{
     const {userEmail}=req.params
     const result = await facilitycollection.find({ ownerEmail:userEmail }).toArray()
     res.json(result)
    })
 
-     app.delete("/facility/:userId", async (req, res) => {
+     app.delete("/facility/:userId", varifyToken, async (req, res) => {
        const { userId } = req.params;
        const result = await facilitycollection.deleteOne({
          _id: new ObjectId(userId),
@@ -107,28 +131,29 @@ async function run() {
      });
 
 
-   app.post("/booking",async(req,res)=>{
+   app.post("/booking",varifyToken,async(req,res)=>{
     const bookingData=req.body;
     const result =await bookingCollection.insertOne(bookingData)
     res.json(result);
    })
 
-   app.get("/booking/:userId",async(req,res)=>{
-    const {userId}=req.params
-    const result=await bookingCollection.find({userId:userId}).toArray();
-    res.json(result);
+   app.get("/booking/:userId", varifyToken, async (req, res) => {
+     const { userId } = req.params;
+     const result = await bookingCollection.find({ userId: userId }).toArray();
+     res.json(result);
+   });
 
-   })
+   app.delete("/booking/:bookingId", varifyToken, async (req, res) => {
+     const { bookingId } = req.params;
+     const result = await bookingCollection.deleteOne({
+       _id: new ObjectId(bookingId),
+     });
+     res.json(result);
+   });
 
-   app.delete("/booking/:bookingId",async(req,res)=>{
-    const { bookingId } = req.params;
-    const result = await bookingCollection.deleteOne({_id: new ObjectId(bookingId)})
-    res.json(result)
-   })
 
 
-
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
